@@ -144,14 +144,17 @@ async def catch_all(request: Request):
             return JSONResponse({}, status_code=500)
 
     method = HttpMethod(request.method)
-    if method == HttpMethod.post and int(request.headers.get("content-length")) > 0:
-        body = await request.json()
+    if method == HttpMethod.post:
+        try:
+            body = await request.json()
+        except:
+            body = None
     else:
         body = None
 
     url = f"http://localhost:{settings.main_app_port}/{path}"
     try:
-        logger.info(f"awaiting downstream response for {method.value} call to {url}")
+        logger.info(f"awaiting downstream response for {method.value} call to {url} with body {body}")
         response_status, response_json = await h.invoke(method, url, body)
     except ClientResponseError as e:
         return JSONResponse(status_code=e.status)
