@@ -14,7 +14,7 @@ openssl base64 -A < "keys/ca.crt"
 
 
 ```
-docker build -t daps .
-docker build -f Dockerfile_sidecar -t daps-sidecar .
+docker build -t trondhindenes/daps-webhook .
+docker build -f Dockerfile_sidecar -t trondhindenes/daps-sidecar .
 
 ```

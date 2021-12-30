@@ -30,9 +30,7 @@ def validate():
 
 @app.route("/mutate", methods=["POST"])
 def mutate():
-    print("gonna mutate it")
     spec = request.json["request"]["object"]
-    # print(json.dumps(spec))
 
     orig_spec = copy.deepcopy(spec)
     has_dapr_sidecar = len([x for x in spec["spec"]["containers"] if x["name"] == "daprd"]) > 0
@@ -41,22 +39,15 @@ def mutate():
     has_daps_annotation = spec["metadata"]["annotations"].get("daps.io/enabled") == "true"
     do_mutate = False
 
-    has_dapr = False
     if has_dapr_sidecar and has_dapr_annotation and has_daps_annotation:
         do_mutate = True
 
     if do_mutate:
-        print("has dapr")
         pod_termination_gracetime_secs = spec["spec"]["terminationGracePeriodSeconds"]
         application_port = spec["metadata"]["annotations"].get("dapr.io/app-port")
         dapr_container = [x for x in spec["spec"]["containers"] if x["name"] == "daprd"][0]
         app_container = [x for x in spec["spec"]["containers"] if x["name"] == "app"][0]
 
-        dapr_container["env"].append({
-            "name": "STUFF",
-            "value": "ya"
-        })
-        dapr_container["image"] = "docker.io/daprio/daprd:1.5.0"
         dapr_container["lifecycle"] = {
             "preStop": {
                 "httpGet": {
@@ -79,7 +70,7 @@ def mutate():
             spec["spec"]["containers"].append(
                 {
                     "name": "daps",
-                    "image": "daps-sidecar:latest",
+                    "image": "trondhindenes/daps-sidecar:latest",
                     "imagePullPolicy": "IfNotPresent",
                     "env": [
                         {
@@ -114,16 +105,6 @@ def mutate():
             "patchType": "JSONPatch",
         }
     }
-    # return jsonify(
-    #     {
-    #         "response": {
-    #             "allowed": True,
-    #             "uid": request.json["request"]["uid"],
-    #             "patch": base64.b64encode(str(patch).encode()).decode(),
-    #             "patchtype": "JSONPatch",
-    #         }
-    #     }
-    # )
     resp = make_response(jsonify(response), 200)
     resp.headers["content-Type"] = "application/json-patch+json"
     return resp
@@ -131,8 +112,7 @@ def mutate():
 
 @app.route("/health", methods=["GET"])
 def health():
-    print("is health")
-    return ("", http.HTTPStatus.NO_CONTENT)
+    return "", http.HTTPStatus.NO_CONTENT
 
 
 if __name__ == "__main__":
