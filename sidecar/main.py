@@ -68,7 +68,6 @@ async def startup_event():
         await asyncio.sleep(1)
 
 
-
 @app.get("/daps/app-shutdown")
 async def get_app_shutdown():
     logger.info("entering shutdown mode")
@@ -76,6 +75,7 @@ async def get_app_shutdown():
     start = datetime.now()
     app_busy_probe_url = f"http://localhost:{settings.main_app_port}{settings.main_app_busy_probe_path}"
     async with httpx.AsyncClient() as client:
+        logger.info(f"checking app shutdown readiness on url {app_busy_probe_url}")
         while True:
             end = datetime.now()
             taken = (end - start).total_seconds()
@@ -87,13 +87,13 @@ async def get_app_shutdown():
             try:
                 response = await client.get(app_busy_probe_url, timeout=1)
 
-            except httpx.RequestError as exc:
-                logger.info("unable contact app pod, assuming busy")
+            except httpx.RequestError as e:
+                logger.info(f"unable contact app pod, assuming busy: {str(e)}")
                 await asyncio.sleep(1)
                 continue
 
             response_data = response.json()
-            if response_data["busy"] is False:
+            if response_data.get("busy", None) is False:
                 logger.info("main app reporting not busy. ready to shut down")
                 GlobalState.app_shutdown_ready = True
                 return {"status": "ok"}
