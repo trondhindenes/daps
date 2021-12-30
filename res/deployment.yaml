@@ -37,7 +37,6 @@ spec:
       containers:
         - name: app
           image: trondhindenes/daps-webhook:latest
-          imagePullPolicy: IfNotPresent
           args:
             - "--certfile=/certs/tls.crt"
             - "--keyfile=/certs/tls.key"

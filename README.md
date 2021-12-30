@@ -1,3 +1,12 @@
+# DAPS
+## What is this
+dapr.io is awesome, but has some weak spots around lifecycle management. Daps attempts to fix some of these.
+
+## What DAPS does
+### Startup robustness
+
+### Shutdown coordination
+
 
 
 
@@ -17,4 +26,6 @@ openssl base64 -A < "keys/ca.crt"
 docker build -t trondhindenes/daps-webhook .
 docker build -f Dockerfile_sidecar -t trondhindenes/daps-sidecar .
 
+docker push trondhindenes/daps-webhook
+docker push trondhindenes/daps-sidecar
 ```

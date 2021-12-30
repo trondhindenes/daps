@@ -1,6 +1,6 @@
 FROM python:3.9 AS parent
 WORKDIR /app
-RUN pip3 install pipenv
+RUN pip install pipenv
 COPY Pipfile /app/
 COPY Pipfile.lock /app/
 ENV PYTHONUNBUFFERED=1
