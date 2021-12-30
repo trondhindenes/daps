@@ -6,12 +6,16 @@ from aiohttp import ClientResponseError
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from loguru import logger
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from sidecar.http_client import Http, HttpMethod
 from sidecar.settings import get_settings
 
 settings = get_settings()
 app = FastAPI()
+instrumentator = Instrumentator(
+    should_instrument_requests_inprogress=True,
+)
 
 h = Http()
 

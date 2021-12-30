@@ -15,6 +15,7 @@ pydantic = "*"
 httpx = "*"
 aiohttp = {extras = ["speedups"], version = "*"}
 
+
 [dev-packages]
 
 [requires]
