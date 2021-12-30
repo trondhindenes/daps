@@ -13,7 +13,6 @@ from sidecar.settings import get_settings
 settings = get_settings()
 app = FastAPI()
 
-
 h = Http()
 
 
