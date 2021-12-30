@@ -1,0 +1,24 @@
+kind: MutatingWebhookConfiguration
+apiVersion: admissionregistration.k8s.io/v1
+metadata:
+  name: daps-webhook
+webhooks:
+  - name: daps-webhook.daps-system.svc
+    admissionReviewVersions:
+    - v1
+    - v1beta1
+    sideEffects: None
+    failurePolicy: Ignore
+    matchPolicy: Equivalent
+    reinvocationPolicy: Never
+    rules:
+      - operations: ["CREATE"]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+    clientConfig:
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUMrekNDQWVPZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFmTVIwd0d3WURWUVFERXhSelpXeG0KTFhOcFoyNWxaQzFyT0hNdFkyVnlkREFlRncweU1URXlNamt4TnpRNE1qTmFGdzB6TVRFeU1qY3hOelE0TWpOYQpNQjh4SFRBYkJnTlZCQU1URkhObGJHWXRjMmxuYm1Wa0xXczRjeTFqWlhKME1JSUJJakFOQmdrcWhraUc5dzBCCkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXhzSFE0ZHZibTRnUlYxTzB0dEhYZXMzWVY3Y0ZrQUhlU2RNNktVNDEKUU40eVllc0RjdlZXWER3Q0hxNDRLYnIvL1BTWmdobHlDUm9OMjdZVHJ3bFZwK0g2eWYxOWxCNEMzdllhL2R0bwoxNUwyak44Mkc3YUJvREFjc0RKSmNReU10cGMwZWRGV2hTQ2VCRHk2ZjY0TVBCODlvQUtuRTl2cVJKUzJKNVFoCmRUMXBYMWdabEJSaTU0NWFsTzE5dEZFMW5zSjl6QXB5aWVGV1M4bHczYlpPdGJZNy9DSzFxL2ZOc1Z5ckw4dlcKL2lQSEFLcUN5dnErRGFuVkNxYXAxaUZvWEpaL2xlT3M5amNHQVEyTWVNNTR3YXVnd1RMbkdRbmlleEJiOHpOMgp6TWs3RGdWWjJleGRseDNIMEFDWFBpL0l5RUJIK2xoTzBmVmoxdlFkYWxGZE5RSURBUUFCbzBJd1FEQU9CZ05WCkhROEJBZjhFQkFNQ0FxUXdEd1lEVlIwVEFRSC9CQVV3QXdFQi96QWRCZ05WSFE0RUZnUVVOaERmTFczaGZpVk8Kdk1hU0pxRStzKzFrcUZjd0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFITkJmeTdZN3VtL2J1SDk1cjBJVE90Qgo1bXUyRi94K2hkeUE4QjhzU2dFeDJhT05QUU5sTm5kTmFqRFhqc1RrL3dxUW9vd1hUbHdrNVYyaFR6a3UyOXNmClQwcWpTNDRYVDNiSGsreTA0OVJDS2ZWV2lJdGhseTBjSzlta1VwYkE2WWt5WTNVVVlYdE9keGppOTFWeWsrdDQKUkhILytQSkpHZjdCcU9qTWRWeFIyc3l5RzUzUnpxeEs0NWFlMnVJMXFjbEpJVy9KeWdMNmhjSE5ucG85NEEvVgpBOXlMNkFtRloyRUhlMGpYTUE1M0JVNmZ1R2sxcmVOQWsxcDFGRzhqUTg0MFFxYU5NTUNoUzdMdEl1SitJYjlzClZiOFJqZXdDVVhzSUJrZUFrU3JjTEs1ZlYwRm1VenQ1YnhQMVo4aGthalBmRVQ0VjFrelA5eEVuUm10VEhBST0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      service:
+        namespace: daps-system
+        name: daps-webhook
+        path: /mutate

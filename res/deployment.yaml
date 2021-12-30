@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: daps-system
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: daps-webhook
+  namespace: daps-system
+spec:
+  selector:
+    app: daps-webhook
+  ports:
+  - name: https
+    protocol: TCP
+    port: 443
+    targetPort: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: daps-webhook
+  namespace: daps-system
+  name: daps-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: daps-webhook
+  template:
+    metadata:
+      labels:
+        app: daps-webhook
+    spec:
+      containers:
+        - name: app
+          image: daps:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--certfile=/certs/tls.crt"
+            - "--keyfile=/certs/tls.key"
+            - "--bind=0.0.0.0:443"
+            - "app:app"
+          volumeMounts:
+            - readOnly: true
+              mountPath: /certs
+              name: webhook-certs
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     scheme: HTTPS
+          #     port: 443
+          #   initialDelaySeconds: 3
+          #   periodSeconds: 5
+          # livenessProbe:
+          #   httpGet:
+          #     path: /health
+          #     scheme: HTTPS
+          #     port: 443
+          #   initialDelaySeconds: 3
+          #   periodSeconds:
+      volumes:
+        - name: webhook-certs
+          secret:
+            secretName: webhook-certs

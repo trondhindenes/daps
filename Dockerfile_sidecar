@@ -1,0 +1,16 @@
+FROM python:3.9 AS parent
+WORKDIR /app
+RUN pip3 install pipenv
+COPY Pipfile /app/
+COPY Pipfile.lock /app/
+ENV PYTHONUNBUFFERED=1
+
+
+FROM parent AS base
+RUN pipenv install --deploy --system
+
+
+COPY . .
+ENV APP_PORT=9696
+ENV PYTHONPATH=.
+CMD ["python", "sidecar/runserver.py"]

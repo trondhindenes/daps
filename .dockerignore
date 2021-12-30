@@ -1,0 +1,5 @@
+.idea
+.venv
+*.crt
+*.key
+*.pyc
