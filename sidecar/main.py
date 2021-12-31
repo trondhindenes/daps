@@ -138,13 +138,11 @@ async def get_app_shutdown():
                 logger.info("timed out waiting for main app to be ready to shutdown")
                 GlobalState.app_shutdown_ready = True
                 return {"status": "ok"}
-            if in_proc_requests > 0:
+            if in_proc_requests == 0:
                 logger.info("zero requests in progress. ready to shut down")
                 GlobalState.app_shutdown_ready = True
                 return {"status": "ok"}
             await asyncio.sleep(1)
-
-
 
 
 @app.get("/daps/dapr-shutdown")
