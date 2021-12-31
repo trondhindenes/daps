@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+import time
 
 import httpx
 from aiohttp import ClientResponseError
@@ -14,6 +15,8 @@ settings = get_settings()
 app = FastAPI()
 
 h = Http()
+
+in_proc_requests = 0
 
 
 class GlobalState:
@@ -60,6 +63,28 @@ async def get_dapr_path(dapr_path: str):
             await asyncio.sleep(1)
 
 
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    global in_proc_requests
+    path = request.url.path
+    if not path.startswith("/daps"):
+        incr_in_progress = True
+    else:
+        incr_in_progress = False
+    if incr_in_progress:
+        in_proc_requests += 1
+    response = await call_next(request)
+    if incr_in_progress:
+        in_proc_requests -= 1
+    return response
+
+
+@app.get("/daps/in-progress-requests")
+async def get_in_proc_requests():
+    global in_proc_requests
+    return {"in_progress_requests": in_proc_requests}
+
+
 @app.on_event("startup")
 async def startup_event():
     await h.__aenter__()
@@ -70,12 +95,41 @@ async def startup_event():
 
 @app.get("/daps/app-shutdown")
 async def get_app_shutdown():
+    global in_proc_requests
     logger.info("entering shutdown mode")
     grace_time = settings.pod_termination_grace_period_seconds - 2
     start = datetime.now()
-    app_busy_probe_url = f"http://localhost:{settings.main_app_port}{settings.main_app_busy_probe_path}"
-    async with httpx.AsyncClient() as client:
-        logger.info(f"checking app shutdown readiness on url {app_busy_probe_url}")
+    use_busy_probe = False
+    if settings.main_app_busy_probe_path:
+        use_busy_probe = True
+
+    if use_busy_probe:
+        app_busy_probe_url = f"http://localhost:{settings.main_app_port}{settings.main_app_busy_probe_path}"
+        async with httpx.AsyncClient() as client:
+            logger.info(f"checking app shutdown readiness on url {app_busy_probe_url}")
+            while True:
+                end = datetime.now()
+                taken = (end - start).total_seconds()
+                logger.info(f"taken: {taken}")
+                if taken > grace_time:
+                    logger.info("timed out waiting for main app to be ready to shutdown")
+                    GlobalState.app_shutdown_ready = True
+                    return {"status": "ok"}
+                try:
+                    response = await client.get(app_busy_probe_url, timeout=1)
+
+                except httpx.RequestError as e:
+                    logger.info(f"unable contact app pod, assuming busy: {str(e)}")
+                    await asyncio.sleep(1)
+                    continue
+
+                response_data = response.json()
+                if response_data.get("busy", None) is False:
+                    logger.info("main app reporting not busy. ready to shut down")
+                    GlobalState.app_shutdown_ready = True
+                    return {"status": "ok"}
+                await asyncio.sleep(1)
+    else:  # use daps internal "inprogress requests" counter
         while True:
             end = datetime.now()
             taken = (end - start).total_seconds()
@@ -84,20 +138,13 @@ async def get_app_shutdown():
                 logger.info("timed out waiting for main app to be ready to shutdown")
                 GlobalState.app_shutdown_ready = True
                 return {"status": "ok"}
-            try:
-                response = await client.get(app_busy_probe_url, timeout=1)
-
-            except httpx.RequestError as e:
-                logger.info(f"unable contact app pod, assuming busy: {str(e)}")
-                await asyncio.sleep(1)
-                continue
-
-            response_data = response.json()
-            if response_data.get("busy", None) is False:
-                logger.info("main app reporting not busy. ready to shut down")
+            if in_proc_requests > 0:
+                logger.info("zero requests in progress. ready to shut down")
                 GlobalState.app_shutdown_ready = True
                 return {"status": "ok"}
             await asyncio.sleep(1)
+
+
 
 
 @app.get("/daps/dapr-shutdown")
@@ -109,6 +156,7 @@ async def get_dapr_shutdown():
             return {"status": "ok"}
         else:
             await asyncio.sleep(1)
+
 
 
 @app.get("/daps/self-shutdown")

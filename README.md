@@ -21,11 +21,20 @@ especially combined with automatic scaling such as KEDA. Frequent pod replacemen
 DAPS fixes this by adding a prestop hook to both the app container and the dapr sidecar, 
 and this hook is used to coordinate shutdown of containers. The Dapr sidecar is not allowed to exit befure the app container has completed its work.
 
-Since Dapr doesn't expose an api for determining if there are messages in flight, the app container itself must implement this.
-By default this endpoint should be available on the path `/api/busy`, but you can use the annotation `"daps.io/busy-path"` to point to any path.
+
+There are two ways to determine if the app is ready for shutdown (no messages in flight):
+- since all messages from Dapr to the app container pass thru DAPS, it can track the number of requests in flight. This is the default behavior.
+- It's also possible to implement a "busy" endpoint in the app, which DAPS will call to determine "ready-for-shutdown".
+This can be used if the app needs to perform additional (time-consuming) work after sending the "message processing response" back to dapr.
+These two modes can be controlled using the `"daps.io/busy-path"` annotation. If this annotation, DAPS will use the specified path to determine business, 
+and if the annotation is omitted it will use its internal logic.
+
+It's important to set the pod's `terminationGracePeriodSeconds` so that the application is given sufficient time to complete it's work.
+
+#### Implementing the busy endpoint
+Use the annotation `"daps.io/busy-path"` to point to any path.
 The endpoint should respond to `GET` requests with a json response like this: `{"busy": true}` or `{"busy": false}`. 
 DAPS will keep waiting for the busy flag to become `false`, at which time it will complete the prestop hook which allows containers to shut down. 
-It's important to set the pod's `terminationGracePeriodSeconds` so that the application is given sufficient time to complete it's work.
 
 
 ### How it works

@@ -38,7 +38,7 @@ def mutate():
     has_dapr_annotation = spec["metadata"]["annotations"].get("dapr.io/enabled") == "true"
     has_daps_annotation = spec["metadata"]["annotations"].get("daps.io/enabled") == "true"
     daps_ready_path = spec["metadata"]["annotations"].get("daps.io/ready-path", "/api/ready")
-    daps_busy_path = spec["metadata"]["annotations"].get("daps.io/busy-path", "/api/busy")
+    daps_busy_path = spec["metadata"]["annotations"].get("daps.io/busy-path", None)
     do_mutate = False
 
     if has_dapr_sidecar and has_dapr_annotation and has_daps_annotation:
@@ -69,28 +69,32 @@ def mutate():
             }
         }
         if not has_daps_sidecar:
+            daps_env = [
+                {
+                    "name": "POD_TERMINATION_GRACE_PERIOD_SECONDS",
+                    "value": str(pod_termination_gracetime_secs)
+                },
+                {
+                    "name": "MAIN_APP_PORT",
+                    "value": application_port
+                },
+                {
+                    "name": "MAIN_APP_READY_PROBE_PATH",
+                    "value": daps_ready_path
+                }
+            ]
+            if daps_busy_path:
+                daps_env.append(
+                    {
+                        "name": "MAIN_APP_BUSY_PROBE_PATH",
+                        "value": daps_busy_path
+                    }
+                )
             spec["spec"]["containers"].append(
                 {
                     "name": "daps",
                     "image": "trondhindenes/daps-sidecar:latest",
-                    "env": [
-                        {
-                            "name": "POD_TERMINATION_GRACE_PERIOD_SECONDS",
-                            "value": str(pod_termination_gracetime_secs)
-                        },
-                        {
-                            "name": "MAIN_APP_PORT",
-                            "value": application_port
-                        },
-                        {
-                            "name": "MAIN_APP_READY_PROBE_PATH",
-                            "value": daps_ready_path
-                        },
-                        {
-                            "name": "MAIN_APP_BUSY_PROBE_PATH",
-                            "value": daps_busy_path
-                        }
-                    ],
+                    "env": daps_env,
                     "lifecycle": {
                         "preStop": {
                             "httpGet": {
