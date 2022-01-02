@@ -42,6 +42,9 @@ DAPS uses a mutating webhook to inject a secondary sidecar. This means that dapr
 DAPS rewrites the pod template so that all requests from Dapr to the app is sent thru the DAPS sidecar.
 
 
+## Limitations
+While Dapr supports both http and grpc, DAPS only supports http for now.
+
 ## Setup
 ### Generate certificates for the mutating webhook
 ```
