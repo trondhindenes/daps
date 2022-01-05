@@ -3,7 +3,7 @@ from datetime import datetime
 import time
 
 import httpx
-from aiohttp import ClientResponseError
+from aiohttp import ClientResponseError, ClientConnectorError
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from loguru import logger
@@ -112,7 +112,7 @@ async def get_app_shutdown():
                 taken = (end - start).total_seconds()
                 logger.info(f"taken: {taken}")
                 if taken > grace_time:
-                    logger.info("timed out waiting for main app to be ready to shutdown")
+                    logger.warning("timed out waiting for main app to be ready to shutdown")
                     GlobalState.app_shutdown_ready = True
                     return {"status": "ok"}
                 try:
@@ -135,7 +135,7 @@ async def get_app_shutdown():
             taken = (end - start).total_seconds()
             logger.info(f"taken: {taken}")
             if taken > grace_time:
-                logger.info("timed out waiting for main app to be ready to shutdown")
+                logger.warning("timed out waiting for main app to be ready to shutdown")
                 GlobalState.app_shutdown_ready = True
                 return {"status": "ok"}
             if in_proc_requests == 0:
@@ -203,6 +203,10 @@ async def catch_all(request: Request):
         logger.info(f"awaiting downstream response for {method.value} call to {url} with body {body}")
         response_status, response_json = await h.invoke(method, url, body)
     except ClientResponseError as e:
+        logger.warning(f"got response {str(e)} from downstream")
         return JSONResponse(status_code=e.status)
+    except ClientConnectorError as e:
+        logger.warning(f"could not connect to downstream")
+        return JSONResponse(status_code=500)
     logger.info(response_json)
     return JSONResponse(response_json, status_code=response_status)
