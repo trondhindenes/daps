@@ -10,7 +10,8 @@ class HttpMethod(Enum):
 
 class Http:
     async def __aenter__(self):
-        self._session = aiohttp.ClientSession()
+        timeout = aiohttp.ClientTimeout(total=60*60)
+        self._session = aiohttp.ClientSession(timeout=timeout)
         return self
 
     async def __aexit__(self, *err):
